@@ -127,9 +127,7 @@
     // ==========================================
     const SUPABASE_URL = 'https://csufaqlhqwxeluwibgzq.supabase.co'
     const SUPABASE_ANON_KEY = 'sb_publishable_7jDZeQcbcHjNicjMQhtruQ_yXozKpf2'
-    
-    // Substitua abaixo pelo seu ID numérico do Telegram obtido no @userinfobot
-    const TELEGRAM_CHAT_ID = 123456789 
+    const TELEGRAM_CHAT_ID = 1877607898
     // ==========================================
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -251,9 +249,6 @@
       const titulo = input.value.trim()
 
       if (!titulo) return alert('Digite o título do lembrete!')
-      if (!TELEGRAM_CHAT_ID || TELEGRAM_CHAT_ID === 123456789) {
-        return alert('Por favor, edite o código e coloque o seu Chat ID real do Telegram na variável TELEGRAM_CHAT_ID.')
-      }
 
       const { error } = await supabaseClient
         .from('lembretes_pessoais')
