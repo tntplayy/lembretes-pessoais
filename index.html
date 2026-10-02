@@ -13,6 +13,25 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950">
 
+  <!-- Modal de Login / Senha -->
+  <div id="modalLogin" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-5 text-center">
+      <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto text-xl">
+        <i class="fa-solid fa-lock"></i>
+      </div>
+      <div>
+        <h2 class="font-bold text-lg text-slate-100">Painel Protegido</h2>
+        <p class="text-xs text-slate-400 mt-1">Digite sua senha de acesso para continuar.</p>
+      </div>
+
+      <div class="space-y-3 text-left">
+        <input type="password" id="inputSenhaLogin" placeholder="Sua senha secreta" class="w-full bg-slate-950 text-slate-100 px-4 py-3 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500 text-sm">
+        <button onclick="tentarLogar()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-emerald-900/20">Entrar no Painel</button>
+      </div>
+      <p id="erroLogin" class="text-xs text-rose-400 hidden">Senha incorreta!</p>
+    </div>
+  </div>
+
   <!-- Top bar / Header -->
   <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-20 px-6 py-4">
     <div class="max-w-3xl mx-auto flex justify-between items-center">
@@ -25,20 +44,25 @@
           <p class="text-xs text-slate-400">Cobranças automáticas de 3 em 3h</p>
         </div>
       </div>
-      <button onclick="abrirConfig()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl text-sm font-medium border border-slate-700/60 transition flex items-center gap-2">
-        <i class="fa-solid fa-gear text-slate-400"></i> Configurações
-      </button>
+      <div class="flex items-center gap-2">
+        <button onclick="abrirConfig()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl text-sm font-medium border border-slate-700/60 transition flex items-center gap-2">
+          <i class="fa-solid fa-gear text-slate-400"></i> Configurações
+        </button>
+        <button onclick="bloquearPainel()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 px-3 py-2 rounded-xl text-sm font-medium border border-slate-700/60 transition" title="Sair / Bloquear">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </button>
+      </div>
     </div>
   </header>
 
   <!-- Main Content -->
   <main class="max-w-3xl w-full mx-auto p-4 md:p-6 flex-1 space-y-6">
 
-    <!-- Config Warning Banner (Hidden if configured) -->
+    <!-- Config Warning Banner -->
     <div id="configAlert" class="hidden bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-2xl flex items-start gap-3">
       <i class="fa-solid fa-triangle-exclamation text-lg mt-0.5"></i>
       <div class="flex-1 text-sm">
-        <span class="font-bold">Configuração pendente:</span> Você precisa informar as credenciais do Supabase e o seu Chat ID do Telegram para começar. Clique em "Configurações" no topo.
+        <span class="font-bold">Configuração pendente:</span> Informe as credenciais do Supabase, o Chat ID e defina sua senha em "Configurações".
       </div>
     </div>
 
@@ -87,7 +111,6 @@
 
       <!-- Lista container -->
       <div id="listaLembretes" class="space-y-3">
-        <!-- Renderizado dinamicamente -->
         <div class="text-center py-12 text-slate-500 text-sm bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl">
           Carregando lembretes...
         </div>
@@ -98,7 +121,7 @@
 
   <!-- Footer -->
   <footer class="border-t border-slate-800/80 bg-slate-900/30 py-4 text-center text-xs text-slate-500">
-    Painel integrado com Supabase & Telegram Bot • Hospedado no GitHub Pages
+    Painel protegido por senha • Integrado com Supabase & Telegram
   </footer>
 
   <!-- Modal de Configurações -->
@@ -110,8 +133,6 @@
         </h3>
         <button onclick="fecharConfig()" class="text-slate-400 hover:text-slate-200 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-
-      <p class="text-xs text-slate-400">Essas informações são salvas apenas no armazenamento local do seu navegador (`localStorage`).</p>
 
       <div class="space-y-3 text-sm">
         <div>
@@ -125,7 +146,10 @@
         <div>
           <label class="block text-xs font-medium text-slate-300 mb-1">Telegram Chat ID</label>
           <input type="text" id="cfgChatId" placeholder="Ex: 123456789" class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
-          <span class="text-[11px] text-slate-500 mt-1 block">Dica: Mande `/start` para o bot @userinfobot no Telegram para descobrir seu ID.</span>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Senha de Acesso do Painel</label>
+          <input type="password" id="cfgSenha" placeholder="Defina sua senha secreta" class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
         </div>
       </div>
 
@@ -138,24 +162,59 @@
 
   <!-- JavaScript Application Logic -->
   <script>
-    // Recuperar Configurações do LocalStorage
     let supabaseUrl = localStorage.getItem('sb_url') || ''
     let supabaseKey = localStorage.getItem('sb_key') || ''
     let meuChatId = localStorage.getItem('sb_chat_id') || ''
+    let senhaSalva = localStorage.getItem('sb_senha') || ''
     let filtroAtual = 'todos'
-
     let supabaseClient = null
 
+    // Verificar se já está configurado
     if (supabaseUrl && supabaseKey) {
       supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
     } else {
       document.getElementById('configAlert').classList.remove('hidden')
     }
 
+    // Gerenciamento de Sessão / Senha
+    window.addEventListener('DOMContentLoaded', () => {
+      const sessaoAtiva = sessionStorage.getItem('sessao_autenticada')
+      if (sessaoAtiva === 'true' || !senhaSalva) {
+        document.getElementById('modalLogin').classList.add('hidden')
+      }
+    })
+
+    function tentarLogar() {
+      const digitada = document.getElementById('inputSenhaLogin').value
+      const erroEl = document.getElementById('erroLogin')
+
+      if (!senhaSalva) {
+        // Se ainda não definiu senha nas configurações, cadastra a primeira digitada provisoriamente
+        localStorage.setItem('sb_senha', digitada)
+        senhaSalva = digitada
+      }
+
+      if (digitada === senhaSalva) {
+        sessionStorage.setItem('sessao_autenticada', 'true')
+        document.getElementById('modalLogin').classList.add('hidden')
+        document.getElementById('inputSenhaLogin').value = ''
+        erroEl.classList.add('hidden')
+        carregarLembretes()
+      } else {
+        erroEl.classList.remove('hidden')
+      }
+    }
+
+    function bloquearPainel() {
+      sessionStorage.removeItem('sessao_autenticada')
+      document.getElementById('modalLogin').classList.remove('hidden')
+    }
+
     function abrirConfig() {
       document.getElementById('cfgUrl').value = supabaseUrl
       document.getElementById('cfgKey').value = supabaseKey
       document.getElementById('cfgChatId').value = meuChatId
+      document.getElementById('cfgSenha').value = senhaSalva
       document.getElementById('modalConfig').classList.remove('hidden')
     }
 
@@ -167,14 +226,17 @@
       supabaseUrl = document.getElementById('cfgUrl').value.trim()
       supabaseKey = document.getElementById('cfgKey').value.trim()
       meuChatId = document.getElementById('cfgChatId').value.trim()
+      const novaSenha = document.getElementById('cfgSenha').value.trim()
 
-      if (!supabaseUrl || !supabaseKey || !meuChatId) {
-        return alert('Preencha todos os campos de configuração!')
+      if (!supabaseUrl || !supabaseKey || !meuChatId || !novaSenha) {
+        return alert('Preencha todos os campos, incluindo a senha!')
       }
 
       localStorage.setItem('sb_url', supabaseUrl)
       localStorage.setItem('sb_key', supabaseKey)
       localStorage.setItem('sb_chat_id', meuChatId)
+      localStorage.setItem('sb_senha', novaSenha)
+      senhaSalva = novaSenha
 
       supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
       document.getElementById('configAlert').classList.add('hidden')
@@ -199,7 +261,7 @@
       if (!supabaseClient) {
         document.getElementById('listaLembretes').innerHTML = `
           <div class="text-center py-12 text-slate-400 text-sm bg-slate-900/40 border border-slate-800 rounded-2xl">
-            Configure suas chaves do Supabase clicando em <span class="text-emerald-400 font-semibold">Configurações</span> no canto superior direito.
+            Configure suas chaves do Supabase clicando em <span class="text-emerald-400 font-semibold">Configurações</span> no topo.
           </div>`
         return
       }
@@ -214,11 +276,10 @@
 
       if (error) {
         console.error(error)
-        document.getElementById('listaLembretes').innerHTML = `<div class="text-center py-8 text-rose-400 text-sm bg-slate-900 border border-rose-900/30 rounded-2xl">Erro ao carregar dados. Verifique suas tabelas no Supabase.</div>`
+        document.getElementById('listaLembretes').innerHTML = `<div class="text-center py-8 text-rose-400 text-sm bg-slate-900 border border-rose-900/30 rounded-2xl">Erro ao carregar dados. Verifique sua conexão e tabela.</div>`
         return
       }
 
-      // Atualizar Stats Gerais
       const { data: todos } = await supabaseClient.from('lembretes_pessoais').select('status')
       if (todos) {
         document.getElementById('statTotal').innerText = todos.length
@@ -271,14 +332,14 @@
       const titulo = input.value.trim()
 
       if (!titulo) return alert('Digite o título do lembrete!')
-      if (!meuChatId) return alert('Informe seu Chat ID do Telegram nas Configurações!')
+      if (!meuChatId) return alert('Informe seu Chat ID nas Configurações!')
 
       const { error } = await supabaseClient
         .from('lembretes_pessoais')
         .insert([{ titulo, chat_id: meuChatId, status: 'pendente' }])
 
       if (error) {
-        alert('Erro ao salvar lembrete no Supabase.')
+        alert('Erro ao salvar lembrete.')
         console.error(error)
       } else {
         input.value = ''
@@ -308,8 +369,7 @@
       return text.replace(/[&<>"']/g, m => map[m])
     }
 
-    // Inicializar carregamento ao abrir a página
-    carregarLembretes()
+    if (supabaseClient) carregarLembretes()
   </script>
 </body>
 </html>
