@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel de Lembretes • Telegram</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Top bar / Header -->
+  <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-20 px-6 py-4">
+    <div class="max-w-3xl mx-auto flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 p-2.5 rounded-xl">
+          <i class="fa-solid fa-bell text-lg"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg tracking-tight text-slate-100">Lembretes Telegram</h1>
+          <p class="text-xs text-slate-400">Cobranças automáticas de 3 em 3h</p>
+        </div>
+      </div>
+      <button onclick="abrirConfig()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl text-sm font-medium border border-slate-700/60 transition flex items-center gap-2">
+        <i class="fa-solid fa-gear text-slate-400"></i> Configurações
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-3xl w-full mx-auto p-4 md:p-6 flex-1 space-y-6">
+
+    <!-- Config Warning Banner (Hidden if configured) -->
+    <div id="configAlert" class="hidden bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-2xl flex items-start gap-3">
+      <i class="fa-solid fa-triangle-exclamation text-lg mt-0.5"></i>
+      <div class="flex-1 text-sm">
+        <span class="font-bold">Configuração pendente:</span> Você precisa informar as credenciais do Supabase e o seu Chat ID do Telegram para começar. Clique em "Configurações" no topo.
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-3 gap-3 md:gap-4">
+      <div class="bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl">
+        <div class="text-xs font-medium text-slate-400 mb-1">Total</div>
+        <div id="statTotal" class="text-2xl font-extrabold text-slate-100">0</div>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl">
+        <div class="text-xs font-medium text-amber-400 mb-1">Pendentes</div>
+        <div id="statPendentes" class="text-2xl font-extrabold text-amber-400">0</div>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800/80 p-4 rounded-2xl">
+        <div class="text-xs font-medium text-emerald-400 mb-1">Resolvidos</div>
+        <div id="statResolvidos" class="text-2xl font-extrabold text-emerald-400">0</div>
+      </div>
+    </div>
+
+    <!-- New Reminder Input Form -->
+    <div class="bg-slate-900 border border-slate-800 p-4 md:p-5 rounded-2xl shadow-xl space-y-3">
+      <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Novo Lembrete</label>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <div class="relative flex-1">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
+            <i class="fa-solid fa-pen"></i>
+          </span>
+          <input type="text" id="tituloInput" placeholder="Ex: Pagar servidor, verificar faturamento..." class="w-full bg-slate-950 text-slate-100 pl-10 pr-4 py-3 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500 text-sm transition">
+        </div>
+        <button onclick="criarLembrete()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-6 py-3 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20">
+          <i class="fa-solid fa-plus"></i> Adicionar
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters & List Section -->
+    <div class="space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 class="font-bold text-slate-200 text-base">Seus Lembretes</h2>
+        <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+          <button onclick="mudarFiltro('todos')" id="btnFiltroTodos" class="px-3 py-1.5 rounded-lg font-medium transition bg-slate-800 text-slate-100">Todos</button>
+          <button onclick="mudarFiltro('pendente')" id="btnFiltroPendente" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200">Pendentes</button>
+          <button onclick="mudarFiltro('resolvido')" id="btnFiltroResolvido" class="px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200">Resolvidos</button>
+        </div>
+      </div>
+
+      <!-- Lista container -->
+      <div id="listaLembretes" class="space-y-3">
+        <!-- Renderizado dinamicamente -->
+        <div class="text-center py-12 text-slate-500 text-sm bg-slate-900/40 border border-dashed border-slate-800 rounded-2xl">
+          Carregando lembretes...
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-900/30 py-4 text-center text-xs text-slate-500">
+    Painel integrado com Supabase & Telegram Bot • Hospedado no GitHub Pages
+  </footer>
+
+  <!-- Modal de Configurações -->
+  <div id="modalConfig" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-base text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-gear text-emerald-400"></i> Configurações do Sistema
+        </h3>
+        <button onclick="fecharConfig()" class="text-slate-400 hover:text-slate-200 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <p class="text-xs text-slate-400">Essas informações são salvas apenas no armazenamento local do seu navegador (`localStorage`).</p>
+
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Supabase URL</label>
+          <input type="text" id="cfgUrl" placeholder="https://seu-projeto.supabase.co" class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Supabase Anon Key</label>
+          <input type="password" id="cfgKey" placeholder="eyJhbGciOi..." class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Telegram Chat ID</label>
+          <input type="text" id="cfgChatId" placeholder="Ex: 123456789" class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
+          <span class="text-[11px] text-slate-500 mt-1 block">Dica: Mande `/start` para o bot @userinfobot no Telegram para descobrir seu ID.</span>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="fecharConfig()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl text-sm font-medium transition">Cancelar</button>
+        <button onclick="salvarConfig()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-sm transition">Salvar Configurações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    // Recuperar Configurações do LocalStorage
+    let supabaseUrl = localStorage.getItem('sb_url') || ''
+    let supabaseKey = localStorage.getItem('sb_key') || ''
+    let meuChatId = localStorage.getItem('sb_chat_id') || ''
+    let filtroAtual = 'todos'
+
+    let supabaseClient = null
+
+    if (supabaseUrl && supabaseKey) {
+      supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+    } else {
+      document.getElementById('configAlert').classList.remove('hidden')
+    }
+
+    function abrirConfig() {
+      document.getElementById('cfgUrl').value = supabaseUrl
+      document.getElementById('cfgKey').value = supabaseKey
+      document.getElementById('cfgChatId').value = meuChatId
+      document.getElementById('modalConfig').classList.remove('hidden')
+    }
+
+    function fecharConfig() {
+      document.getElementById('modalConfig').classList.add('hidden')
+    }
+
+    function salvarConfig() {
+      supabaseUrl = document.getElementById('cfgUrl').value.trim()
+      supabaseKey = document.getElementById('cfgKey').value.trim()
+      meuChatId = document.getElementById('cfgChatId').value.trim()
+
+      if (!supabaseUrl || !supabaseKey || !meuChatId) {
+        return alert('Preencha todos os campos de configuração!')
+      }
+
+      localStorage.setItem('sb_url', supabaseUrl)
+      localStorage.setItem('sb_key', supabaseKey)
+      localStorage.setItem('sb_chat_id', meuChatId)
+
+      supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+      document.getElementById('configAlert').classList.add('hidden')
+      fecharConfig()
+      carregarLembretes()
+    }
+
+    function mudarFiltro(tipo) {
+      filtroAtual = tipo
+      ['todos', 'pendente', 'resolvido'].forEach(f => {
+        const btn = document.getElementById(`btnFiltro${f.charAt(0).toUpperCase() + f.slice(1)}`)
+        if (f === tipo) {
+          btn.className = "px-3 py-1.5 rounded-lg font-medium transition bg-slate-800 text-slate-100"
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-slate-200"
+        }
+      })
+      carregarLembretes()
+    }
+
+    async function carregarLembretes() {
+      if (!supabaseClient) {
+        document.getElementById('listaLembretes').innerHTML = `
+          <div class="text-center py-12 text-slate-400 text-sm bg-slate-900/40 border border-slate-800 rounded-2xl">
+            Configure suas chaves do Supabase clicando em <span class="text-emerald-400 font-semibold">Configurações</span> no canto superior direito.
+          </div>`
+        return
+      }
+
+      let query = supabaseClient.from('lembretes_pessoais').select('*').order('criado_em', { ascending: false })
+
+      if (filtroAtual !== 'todos') {
+        query = query.eq('status', filtroAtual)
+      }
+
+      const { data, error } = await query
+
+      if (error) {
+        console.error(error)
+        document.getElementById('listaLembretes').innerHTML = `<div class="text-center py-8 text-rose-400 text-sm bg-slate-900 border border-rose-900/30 rounded-2xl">Erro ao carregar dados. Verifique suas tabelas no Supabase.</div>`
+        return
+      }
+
+      // Atualizar Stats Gerais
+      const { data: todos } = await supabaseClient.from('lembretes_pessoais').select('status')
+      if (todos) {
+        document.getElementById('statTotal').innerText = todos.length
+        document.getElementById('statPendentes').innerText = todos.filter(i => i.status === 'pendente').length
+        document.getElementById('statResolvidos').innerText = todos.filter(i => i.status === 'resolvido').length
+      }
+
+      const container = document.getElementById('listaLembretes')
+      container.innerHTML = ''
+
+      if (data.length === 0) {
+        container.innerHTML = `<div class="text-center py-10 text-slate-500 text-sm bg-slate-950/40 border border-slate-900 rounded-2xl">Nenhum lembrete encontrado.</div>`
+        return
+      }
+
+      data.forEach(item => {
+        const isResolvido = item.status === 'resolvido'
+        const div = document.createElement('div')
+        div.className = `p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border transition ${isResolvido ? 'bg-slate-900/30 border-slate-800/50 opacity-60' : 'bg-slate-900 border-slate-800 shadow-sm'}`
+        
+        div.innerHTML = `
+          <div class="flex items-start gap-3.5 flex-1">
+            <div class="mt-0.5 text-lg ${isResolvido ? 'text-emerald-500' : 'text-amber-500'}">
+              <i class="fa-solid ${isResolvido ? 'fa-circle-check' : 'fa-clock'}"></i>
+            </div>
+            <div>
+              <p class="font-medium text-sm text-slate-100 ${isResolvido ? 'line-through text-slate-400' : ''}">${escapeHtml(item.titulo)}</p>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-[11px] px-2 py-0.5 rounded-md font-medium uppercase tracking-wide ${isResolvido ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">${item.status}</span>
+                <span class="text-xs text-slate-500">${new Date(item.criado_em).toLocaleDateString('pt-BR')} às ${new Date(item.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 self-end sm:self-center">
+            ${!isResolvido ? `<button onclick="mudarStatus('${item.id}', 'resolvido')" class="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5"><i class="fa-solid fa-check"></i> Resolver</button>` : `<button onclick="mudarStatus('${item.id}', 'pendente')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition">Reabrir</button>`}
+            <button onclick="deletarLembrete('${item.id}')" class="text-slate-500 hover:text-rose-400 p-2 text-xs transition"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        `
+        container.appendChild(div)
+      })
+    }
+
+    async function criarLembrete() {
+      if (!supabaseClient) {
+        alert('Configure o Supabase primeiro nas Configurações!')
+        return abrirConfig()
+      }
+
+      const input = document.getElementById('tituloInput')
+      const titulo = input.value.trim()
+
+      if (!titulo) return alert('Digite o título do lembrete!')
+      if (!meuChatId) return alert('Informe seu Chat ID do Telegram nas Configurações!')
+
+      const { error } = await supabaseClient
+        .from('lembretes_pessoais')
+        .insert([{ titulo, chat_id: meuChatId, status: 'pendente' }])
+
+      if (error) {
+        alert('Erro ao salvar lembrete no Supabase.')
+        console.error(error)
+      } else {
+        input.value = ''
+        carregarLembretes()
+      }
+    }
+
+    async function mudarStatus(id, novoStatus) {
+      const { error } = await supabaseClient
+        .from('lembretes_pessoais')
+        .update({ status: novoStatus })
+        .eq('id', id)
+
+      if (error) console.error(error)
+      carregarLembretes()
+    }
+
+    async function deletarLembrete(id) {
+      if (!confirm('Deseja realmente excluir este lembrete?')) return
+      const { error } = await supabaseClient.from('lembretes_pessoais').delete().eq('id', id)
+      if (error) console.error(error)
+      carregarLembretes()
+    }
+
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }
+      return text.replace(/[&<>"']/g, m => map[m])
+    }
+
+    // Inicializar carregamento ao abrir a página
+    carregarLembretes()
+  </script>
+</body>
+</html>
