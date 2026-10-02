@@ -127,7 +127,9 @@
     // ==========================================
     const SUPABASE_URL = 'https://csufaqlhqwxeluwibgzq.supabase.co'
     const SUPABASE_ANON_KEY = 'sb_publishable_7jDZeQcbcHjNicjMQhtruQ_yXozKpf2'
-    const TELEGRAM_CHAT_ID = 'SEU_CHAT_ID_DO_TELEGRAM_AQUI'
+    
+    // Substitua abaixo pelo seu ID numérico do Telegram obtido no @userinfobot
+    const TELEGRAM_CHAT_ID = 123456789 
     // ==========================================
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -198,7 +200,7 @@
 
       if (error) {
         console.error(error)
-        document.getElementById('listaLembretes').innerHTML = `<div class="text-center py-8 text-rose-400 text-sm bg-slate-900 border border-rose-900/30 rounded-2xl">Erro ao carregar dados. Verifique permissões RLS ou conexão.</div>`
+        document.getElementById('listaLembretes').innerHTML = `<div class="text-center py-8 text-rose-400 text-sm bg-slate-900 border border-rose-900/30 rounded-2xl">Erro ao carregar dados: ${error.message}</div>`
         return
       }
 
@@ -249,13 +251,20 @@
       const titulo = input.value.trim()
 
       if (!titulo) return alert('Digite o título do lembrete!')
+      if (!TELEGRAM_CHAT_ID || TELEGRAM_CHAT_ID === 123456789) {
+        return alert('Por favor, edite o código e coloque o seu Chat ID real do Telegram na variável TELEGRAM_CHAT_ID.')
+      }
 
       const { error } = await supabaseClient
         .from('lembretes_pessoais')
-        .insert([{ titulo, chat_id: TELEGRAM_CHAT_ID, status: 'pendente' }])
+        .insert([{ 
+          titulo: titulo, 
+          chat_id: Number(TELEGRAM_CHAT_ID), 
+          status: 'pendente' 
+        }])
 
       if (error) {
-        alert('Erro ao salvar lembrete.')
+        alert('Erro ao salvar lembrete: ' + error.message)
         console.error(error)
       } else {
         input.value = ''
@@ -269,14 +278,20 @@
         .update({ status: novoStatus })
         .eq('id', id)
 
-      if (error) console.error(error)
+      if (error) {
+        alert('Erro ao atualizar status: ' + error.message)
+        console.error(error)
+      }
       carregarLembretes()
     }
 
     async function deletarLembrete(id) {
       if (!confirm('Deseja realmente excluir este lembrete?')) return
       const { error } = await supabaseClient.from('lembretes_pessoais').delete().eq('id', id)
-      if (error) console.error(error)
+      if (error) {
+        alert('Erro ao excluir: ' + error.message)
+        console.error(error)
+      }
       carregarLembretes()
     }
 
