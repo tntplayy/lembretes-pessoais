@@ -13,7 +13,7 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950">
 
-  <!-- Modal de Login / Senha -->
+  <!-- Modal de Login / Autenticação Supabase -->
   <div id="modalLogin" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-5 text-center">
       <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 w-12 h-12 rounded-2xl flex items-center justify-center mx-auto text-xl">
@@ -21,14 +21,21 @@
       </div>
       <div>
         <h2 class="font-bold text-lg text-slate-100">Painel Protegido</h2>
-        <p class="text-xs text-slate-400 mt-1">Digite sua senha de acesso para continuar.</p>
+        <p class="text-xs text-slate-400 mt-1">Entre com sua conta do Supabase.</p>
       </div>
 
-      <div class="space-y-3 text-left">
-        <input type="password" id="inputSenhaLogin" placeholder="Sua senha secreta" class="w-full bg-slate-950 text-slate-100 px-4 py-3 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500 text-sm">
-        <button onclick="tentarLogar()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-emerald-900/20">Entrar no Painel</button>
-      </div>
-      <p id="erroLogin" class="text-xs text-rose-400 hidden">Senha incorreta!</p>
+      <form onsubmit="fazerLogin(event)" class="space-y-3 text-left">
+        <div>
+          <label class="block text-[11px] font-medium text-slate-400 mb-1">E-mail</label>
+          <input type="email" id="inputEmail" placeholder="seu@email.com" required class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500 text-sm">
+        </div>
+        <div>
+          <label class="block text-[11px] font-medium text-slate-400 mb-1">Senha</label>
+          <input type="password" id="inputSenha" placeholder="••••••••" required class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500 text-sm">
+        </div>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-emerald-900/20 mt-2">Entrar</button>
+      </form>
+      <p id="erroLogin" class="text-xs text-rose-400 hidden"></p>
     </div>
   </div>
 
@@ -41,15 +48,12 @@
         </div>
         <div>
           <h1 class="font-bold text-lg tracking-tight text-slate-100">Lembretes Telegram</h1>
-          <p class="text-xs text-slate-400">Cobranças automáticas de 3 em 3h</p>
+          <p id="userEmailDisplay" class="text-xs text-slate-400">Autenticado</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="abrirConfig()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl text-sm font-medium border border-slate-700/60 transition flex items-center gap-2">
-          <i class="fa-solid fa-gear text-slate-400"></i> Configurações
-        </button>
-        <button onclick="bloquearPainel()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 px-3 py-2 rounded-xl text-sm font-medium border border-slate-700/60 transition" title="Sair / Bloquear">
-          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        <button onclick="fazerLogout()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 px-3.5 py-2 rounded-xl text-sm font-medium border border-slate-700/60 transition flex items-center gap-2" title="Sair / Desconectar">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
         </button>
       </div>
     </div>
@@ -57,14 +61,6 @@
 
   <!-- Main Content -->
   <main class="max-w-3xl w-full mx-auto p-4 md:p-6 flex-1 space-y-6">
-
-    <!-- Config Warning Banner -->
-    <div id="configAlert" class="hidden bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-2xl flex items-start gap-3">
-      <i class="fa-solid fa-triangle-exclamation text-lg mt-0.5"></i>
-      <div class="flex-1 text-sm">
-        <span class="font-bold">Configuração pendente:</span> Informe as credenciais do Supabase, o Chat ID e defina sua senha em "Configurações".
-      </div>
-    </div>
 
     <!-- Stats Grid -->
     <div class="grid grid-cols-3 gap-3 md:gap-4">
@@ -121,127 +117,61 @@
 
   <!-- Footer -->
   <footer class="border-t border-slate-800/80 bg-slate-900/30 py-4 text-center text-xs text-slate-500">
-    Painel protegido por senha • Integrado com Supabase & Telegram
+    Painel com Supabase Auth & Telegram
   </footer>
-
-  <!-- Modal de Configurações -->
-  <div id="modalConfig" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl space-y-4">
-      <div class="flex justify-between items-center">
-        <h3 class="font-bold text-base text-slate-100 flex items-center gap-2">
-          <i class="fa-solid fa-gear text-emerald-400"></i> Configurações do Sistema
-        </h3>
-        <button onclick="fecharConfig()" class="text-slate-400 hover:text-slate-200 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-
-      <div class="space-y-3 text-sm">
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Supabase URL</label>
-          <input type="text" id="cfgUrl" placeholder="https://seu-projeto.supabase.co" class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Supabase Anon Key</label>
-          <input type="password" id="cfgKey" placeholder="eyJhbGciOi..." class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Telegram Chat ID</label>
-          <input type="text" id="cfgChatId" placeholder="Ex: 123456789" class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Senha de Acesso do Painel</label>
-          <input type="password" id="cfgSenha" placeholder="Defina sua senha secreta" class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500">
-        </div>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-2">
-        <button onclick="fecharConfig()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl text-sm font-medium transition">Cancelar</button>
-        <button onclick="salvarConfig()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-sm transition">Salvar Configurações</button>
-      </div>
-    </div>
-  </div>
 
   <!-- JavaScript Application Logic -->
   <script>
-    let supabaseUrl = localStorage.getItem('sb_url') || ''
-    let supabaseKey = localStorage.getItem('sb_key') || ''
-    let meuChatId = localStorage.getItem('sb_chat_id') || ''
-    let senhaSalva = localStorage.getItem('sb_senha') || ''
+    // ==========================================
+    // CONFIGURAÇÕES FIXAS
+    // ==========================================
+    const SUPABASE_URL = 'https://csufaqlhqwxeluwibgzq.supabase.co'
+    const SUPABASE_ANON_KEY = 'sb_publishable_7jDZeQcbcHjNicjMQhtruQ_yXozKpf2'
+    const TELEGRAM_CHAT_ID = 'SEU_CHAT_ID_DO_TELEGRAM_AQUI'
+    // ==========================================
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     let filtroAtual = 'todos'
-    let supabaseClient = null
 
-    // Verificar se já está configurado
-    if (supabaseUrl && supabaseKey) {
-      supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
-    } else {
-      document.getElementById('configAlert').classList.remove('hidden')
-    }
-
-    // Gerenciamento de Sessão / Senha
-    window.addEventListener('DOMContentLoaded', () => {
-      const sessaoAtiva = sessionStorage.getItem('sessao_autenticada')
-      if (sessaoAtiva === 'true' || !senhaSalva) {
+    // Verificar sessão ativa ao carregar a página
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      if (session) {
         document.getElementById('modalLogin').classList.add('hidden')
+        document.getElementById('userEmailDisplay').innerText = session.user.email
+        carregarLembretes()
+      } else {
+        document.getElementById('modalLogin').classList.remove('hidden')
       }
     })
 
-    function tentarLogar() {
-      const digitada = document.getElementById('inputSenhaLogin').value
+    async function fazerLogin(event) {
+      event.preventDefault()
+      const email = document.getElementById('inputEmail').value.trim()
+      const senha = document.getElementById('inputSenha').value.trim()
       const erroEl = document.getElementById('erroLogin')
 
-      if (!senhaSalva) {
-        // Se ainda não definiu senha nas configurações, cadastra a primeira digitada provisoriamente
-        localStorage.setItem('sb_senha', digitada)
-        senhaSalva = digitada
-      }
+      erroEl.classList.add('hidden')
 
-      if (digitada === senhaSalva) {
-        sessionStorage.setItem('sessao_autenticada', 'true')
-        document.getElementById('modalLogin').classList.add('hidden')
-        document.getElementById('inputSenhaLogin').value = ''
-        erroEl.classList.add('hidden')
-        carregarLembretes()
-      } else {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: senha,
+      })
+
+      if (error) {
+        erroEl.innerText = 'E-mail ou senha incorretos.'
         erroEl.classList.remove('hidden')
+      } else {
+        document.getElementById('modalLogin').classList.add('hidden')
+        document.getElementById('userEmailDisplay').innerText = data.user.email
+        carregarLembretes()
       }
     }
 
-    function bloquearPainel() {
-      sessionStorage.removeItem('sessao_autenticada')
-      document.getElementById('modalLogin').classList.remove('hidden')
-    }
-
-    function abrirConfig() {
-      document.getElementById('cfgUrl').value = supabaseUrl
-      document.getElementById('cfgKey').value = supabaseKey
-      document.getElementById('cfgChatId').value = meuChatId
-      document.getElementById('cfgSenha').value = senhaSalva
-      document.getElementById('modalConfig').classList.remove('hidden')
-    }
-
-    function fecharConfig() {
-      document.getElementById('modalConfig').classList.add('hidden')
-    }
-
-    function salvarConfig() {
-      supabaseUrl = document.getElementById('cfgUrl').value.trim()
-      supabaseKey = document.getElementById('cfgKey').value.trim()
-      meuChatId = document.getElementById('cfgChatId').value.trim()
-      const novaSenha = document.getElementById('cfgSenha').value.trim()
-
-      if (!supabaseUrl || !supabaseKey || !meuChatId || !novaSenha) {
-        return alert('Preencha todos os campos, incluindo a senha!')
-      }
-
-      localStorage.setItem('sb_url', supabaseUrl)
-      localStorage.setItem('sb_key', supabaseKey)
-      localStorage.setItem('sb_chat_id', meuChatId)
-      localStorage.setItem('sb_senha', novaSenha)
-      senhaSalva = novaSenha
-
-      supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
-      document.getElementById('configAlert').classList.add('hidden')
-      fecharConfig()
-      carregarLembretes()
+    async function fazerLogout() {
+      await supabaseClient.auth.signOut()
+      document.getElementById('modalLogin').classList.add('hidden')
+      document.getElementById('inputSenha').value = ''
     }
 
     function mudarFiltro(tipo) {
@@ -258,14 +188,6 @@
     }
 
     async function carregarLembretes() {
-      if (!supabaseClient) {
-        document.getElementById('listaLembretes').innerHTML = `
-          <div class="text-center py-12 text-slate-400 text-sm bg-slate-900/40 border border-slate-800 rounded-2xl">
-            Configure suas chaves do Supabase clicando em <span class="text-emerald-400 font-semibold">Configurações</span> no topo.
-          </div>`
-        return
-      }
-
       let query = supabaseClient.from('lembretes_pessoais').select('*').order('criado_em', { ascending: false })
 
       if (filtroAtual !== 'todos') {
@@ -276,7 +198,7 @@
 
       if (error) {
         console.error(error)
-        document.getElementById('listaLembretes').innerHTML = `<div class="text-center py-8 text-rose-400 text-sm bg-slate-900 border border-rose-900/30 rounded-2xl">Erro ao carregar dados. Verifique sua conexão e tabela.</div>`
+        document.getElementById('listaLembretes').innerHTML = `<div class="text-center py-8 text-rose-400 text-sm bg-slate-900 border border-rose-900/30 rounded-2xl">Erro ao carregar dados. Verifique permissões RLS ou conexão.</div>`
         return
       }
 
@@ -323,20 +245,14 @@
     }
 
     async function criarLembrete() {
-      if (!supabaseClient) {
-        alert('Configure o Supabase primeiro nas Configurações!')
-        return abrirConfig()
-      }
-
       const input = document.getElementById('tituloInput')
       const titulo = input.value.trim()
 
       if (!titulo) return alert('Digite o título do lembrete!')
-      if (!meuChatId) return alert('Informe seu Chat ID nas Configurações!')
 
       const { error } = await supabaseClient
         .from('lembretes_pessoais')
-        .insert([{ titulo, chat_id: meuChatId, status: 'pendente' }])
+        .insert([{ titulo, chat_id: TELEGRAM_CHAT_ID, status: 'pendente' }])
 
       if (error) {
         alert('Erro ao salvar lembrete.')
@@ -368,8 +284,6 @@
       const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }
       return text.replace(/[&<>"']/g, m => map[m])
     }
-
-    if (supabaseClient) carregarLembretes()
   </script>
 </body>
 </html>
