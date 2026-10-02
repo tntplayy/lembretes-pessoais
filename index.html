@@ -79,18 +79,26 @@
     </div>
 
     <!-- New Reminder Input Form -->
-    <div class="bg-slate-900 border border-slate-800 p-4 md:p-5 rounded-2xl shadow-xl space-y-3">
-      <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Novo Lembrete</label>
-      <div class="flex flex-col sm:flex-row gap-2">
-        <div class="relative flex-1">
+    <div class="bg-slate-900 border border-slate-800 p-4 md:p-5 rounded-2xl shadow-xl space-y-4">
+      <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Novo Lembrete Programado</label>
+      
+      <div class="space-y-3">
+        <div class="relative">
           <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-500">
             <i class="fa-solid fa-pen"></i>
           </span>
-          <input type="text" id="tituloInput" placeholder="Ex: Pagar servidor, verificar faturamento..." class="w-full bg-slate-950 text-slate-100 pl-10 pr-4 py-3 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500 text-sm transition">
+          <input type="text" id="tituloInput" placeholder="Ex: Reunião importante, pagar fatura..." class="w-full bg-slate-950 text-slate-100 pl-10 pr-4 py-3 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500 text-sm transition">
         </div>
-        <button onclick="criarLembrete()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-6 py-3 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20">
-          <i class="fa-solid fa-plus"></i> Adicionar
-        </button>
+
+        <div class="flex flex-col sm:flex-row gap-3 items-center">
+          <div class="w-full sm:w-auto flex-1">
+            <label class="block text-[11px] font-medium text-slate-400 mb-1">Disparar a partir de:</label>
+            <input type="datetime-local" id="dataInput" class="w-full bg-slate-950 text-slate-100 px-3.5 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-emerald-500 text-sm">
+          </div>
+          <button onclick="criarLembrete()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-6 py-3 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20 self-end">
+            <i class="fa-solid fa-plus"></i> Agendar Lembrete
+          </button>
+        </div>
       </div>
     </div>
 
@@ -122,19 +130,19 @@
 
   <!-- JavaScript Application Logic -->
   <script>
-    // ==========================================
-    // CONFIGURAÇÕES FIXAS
-    // ==========================================
     const SUPABASE_URL = 'https://csufaqlhqwxeluwibgzq.supabase.co'
     const SUPABASE_ANON_KEY = 'sb_publishable_7jDZeQcbcHjNicjMQhtruQ_yXozKpf2'
     const TELEGRAM_CHAT_ID = 1877607898
-    // ==========================================
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     let filtroAtual = 'todos'
 
-    // Verificar sessão ativa ao carregar a página
+    // Preencher o input de data com a data/hora atual por padrão ao carregar
     window.addEventListener('DOMContentLoaded', async () => {
+      const agora = new Date()
+      agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset())
+      document.getElementById('dataInput').value = agora.toISOString().slice(0, 16)
+
       const { data: { session } } = await supabaseClient.auth.getSession()
       if (session) {
         document.getElementById('modalLogin').classList.add('hidden')
@@ -219,6 +227,7 @@
 
       data.forEach(item => {
         const isResolvido = item.status === 'resolvido'
+        const dataInicioFormatada = item.data_inicio ? new Date(item.data_inicio).toLocaleString('pt-BR', {dateStyle: 'short', timeStyle: 'short'}) : '-'
         const div = document.createElement('div')
         div.className = `p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border transition ${isResolvido ? 'bg-slate-900/30 border-slate-800/50 opacity-60' : 'bg-slate-900 border-slate-800 shadow-sm'}`
         
@@ -229,9 +238,9 @@
             </div>
             <div>
               <p class="font-medium text-sm text-slate-100 ${isResolvido ? 'line-through text-slate-400' : ''}">${escapeHtml(item.titulo)}</p>
-              <div class="flex items-center gap-2 mt-1">
+              <div class="flex flex-wrap items-center gap-2 mt-1">
                 <span class="text-[11px] px-2 py-0.5 rounded-md font-medium uppercase tracking-wide ${isResolvido ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">${item.status}</span>
-                <span class="text-xs text-slate-500">${new Date(item.criado_em).toLocaleDateString('pt-BR')} às ${new Date(item.criado_em).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+                <span class="text-xs text-slate-400"><i class="fa-regular fa-calendar-days mr-1"></i> Início: ${dataInicioFormatada}</span>
               </div>
             </div>
           </div>
@@ -246,16 +255,20 @@
 
     async function criarLembrete() {
       const input = document.getElementById('tituloInput')
+      const dataInput = document.getElementById('dataInput')
       const titulo = input.value.trim()
+      const dataInicio = dataInput.value
 
       if (!titulo) return alert('Digite o título do lembrete!')
+      if (!dataInicio) return alert('Selecione a data e horário de início!')
 
       const { error } = await supabaseClient
         .from('lembretes_pessoais')
         .insert([{ 
           titulo: titulo, 
           chat_id: Number(TELEGRAM_CHAT_ID), 
-          status: 'pendente' 
+          status: 'pendente',
+          data_inicio: new Date(dataInicio).toISOString()
         }])
 
       if (error) {
